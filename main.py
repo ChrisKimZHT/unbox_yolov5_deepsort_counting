@@ -77,10 +77,10 @@ def main(video_input: str, output_path: str, headless: bool = False):
             # 统计人流和车流
             if label == 'person':
                 count_person += 1
-                vehicle_in[-1] += 1
+                person_in[-1] += 1
             elif label == 'vehicle':
                 count_vehicle += 1
-                person_in[-1] += 1
+                vehicle_in[-1] += 1
 
             # 将已统计过的跟踪ID添加到集合中
             counted_ids.add(track_id)
