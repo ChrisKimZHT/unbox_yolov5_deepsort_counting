@@ -57,12 +57,10 @@ class Detector:
 
                 for *x, conf, cls_id in det:
                     lbl = self.names[int(cls_id)]
-                    if lbl not in ['person', 'bicycle', 'car', 'motorcycle', 'bus', 'truck']:
-                        continue
-                    pass
-                    x1, y1 = int(x[0]), int(x[1])
-                    x2, y2 = int(x[2]), int(x[3])
-                    boxes.append(
-                        (x1, y1, x2, y2, lbl, conf))
+                    if lbl == 'person':
+                        boxes.append((x[0], x[1], x[2], x[3], lbl, conf))
+                    elif lbl in ['car', 'bicycle', 'motorcycle', 'bus', 'truck']:
+                        lbl = 'vehicle'
+                        boxes.append((x[0], x[1], x[2], x[3], lbl, conf))
 
         return boxes
