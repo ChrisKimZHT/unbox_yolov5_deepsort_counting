@@ -11,12 +11,10 @@ if __name__ == '__main__':
     count_vehicle = 0
 
     # 初始化计数列表
-    frame_counts_person = []
-    frame_counts_vehicle = []
-
-    # 初始化时间列表
-    time_stamps = []
-    start_time = time.time()
+    person_per_frame = []
+    vehicle_per_frame = []
+    person_in = [0]
+    vehicle_in = [0]
 
     font_draw_number = cv2.FONT_HERSHEY_SIMPLEX
     draw_text_position = (int(960 * 0.01), int(540 * 0.05))
@@ -53,6 +51,9 @@ if __name__ == '__main__':
 
         # 统计人流和车流数量
         for x1, y1, x2, y2, label, track_id in bboxes2draw:
+            vehicle_in.append(vehicle_in[-1])
+            person_in.append(person_in[-1])
+            
             # 如果跟踪ID已经统计过，则跳过
             if track_id in counted_ids:
                 continue
@@ -65,8 +66,10 @@ if __name__ == '__main__':
             # 统计人流和车流
             if label == 'person':
                 count_person += 1
+                vehicle_in[-1] += 1
             elif label == 'vehicle':
                 count_vehicle += 1
+                person_in[-1] += 1
 
             # 将已统计过的跟踪ID添加到集合中
             counted_ids.add(track_id)
@@ -87,13 +90,9 @@ if __name__ == '__main__':
         current_count_vehicle = sum(
             1 for bbox in list_bboxs if bbox[4] == 'vehicle')
 
-        # 收集当前时间和帧计数
-        current_time = time.time() - start_time
-        time_stamps.append(current_time)
-
         # 收集当前帧上下行目标数量
-        frame_counts_person.append(current_count_person)
-        frame_counts_vehicle.append(current_count_vehicle)
+        person_per_frame.append(current_count_person)
+        vehicle_per_frame.append(current_count_vehicle)
 
         # 绘制统计信息到帧上
         text_draw = f'Person: {count_person}, Vehicle: {count_vehicle}.'
@@ -111,25 +110,24 @@ if __name__ == '__main__':
     capture.release()
     cv2.destroyAllWindows()
 
-    # 生成柱状图
+    # 生成每帧人车数折线图
     plt.figure(figsize=(10, 5))
-    plt.bar(['Person', 'Vehicle'],
-            [count_person, count_vehicle],
-            color=['blue', 'cyan'])
-    plt.title('Total Counts for Person and Vehicle')
-    plt.savefig('total_bar_chart.png')
-    plt.show()
-
-    # 生成折线图
-    plt.figure(figsize=(10, 5))
-    plt.plot(time_stamps, frame_counts_person,
-             label='Person per Frame', color='blue')
-    plt.plot(time_stamps, frame_counts_vehicle,
-             label='Vehicle per Frame', color='cyan')
-
-    plt.xlabel('Time (s)')
+    plt.plot(person_per_frame, label='Person Count', color='blue')
+    plt.plot(vehicle_per_frame, label='Vehicle Count', color='cyan')
+    plt.xlabel('Frame')
     plt.ylabel('Counts per Frame')
     plt.title('Counts per Frame Over Time for Person and Vehicle')
     plt.legend()
     plt.savefig('frame_line_chart.png')
+    plt.show()
+
+    # 生成每帧进入人车数折线图
+    plt.figure(figsize=(10, 5))
+    plt.plot(person_in, label='Person In', color='blue')
+    plt.plot(vehicle_in, label='Vehicle In', color='cyan')
+    plt.xlabel('Frame')
+    plt.ylabel('Counts')
+    plt.title('Counts Over Time for Person and Vehicle')
+    plt.legend()
+    plt.savefig('in_line_chart.png')
     plt.show()
