@@ -1,10 +1,7 @@
 *.mov
 *.mp4
 *.avi
-total_bar_chart.png
-frame_line_chart.png
-in_line_chart.png
-output_video.mp4
+outputs/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

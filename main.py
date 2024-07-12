@@ -1,11 +1,21 @@
+import argparse
+import datetime
+import os
+
 import cv2
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+
 import tracker
 from detector import Detector
 
-if __name__ == '__main__':
-    # 初始化进入和离开计数
+
+def main(video_input: str, output_path: str, headless: bool = False):
+    # 初始化输出文件夹
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+
+    # 初始化计数
     count_person = 0
     count_vehicle = 0
 
@@ -15,23 +25,22 @@ if __name__ == '__main__':
     person_in = [0]
     vehicle_in = [0]
 
-    font_draw_number = cv2.FONT_HERSHEY_SIMPLEX
-    draw_text_position = (int(960 * 0.01), int(540 * 0.05))
-
-    # 初始化检测器
-    detector = Detector()
-
-    # 初始化视频写入对象
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter('output_video.mp4', fourcc, 20.0, (960, 540))
-
     # 打开视频
-    # capture = cv2.VideoCapture('./video/IMG_6481.mov')
-    capture = cv2.VideoCapture('./video/test.mp4')
+    capture = cv2.VideoCapture(video_input)
+
     # 用于跟踪已经统计过的目标ID的集合
     counted_ids = set()
 
     total_frames = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
+    original_fps = capture.get(cv2.CAP_PROP_FPS)
+
+    # 初始化视频写入对象
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    out = cv2.VideoWriter(os.path.join(output_path, 'result_video.mp4'),
+                          fourcc, original_fps, (960, 540))
+
+    # 初始化检测器
+    detector = Detector()
 
     for _ in tqdm(range(total_frames)):
         # 读取每帧图片
@@ -96,16 +105,21 @@ if __name__ == '__main__':
         vehicle_per_frame.append(current_count_vehicle)
 
         # 绘制统计信息到帧上
+        font_draw_number = cv2.FONT_HERSHEY_SIMPLEX
+        draw_text_position = (int(960 * 0.01), int(540 * 0.05))
         text_draw = f'Person: {count_person}, Vehicle: {count_vehicle}.'
-        output_image_frame = cv2.putText(img=im, text=text_draw,
-                                         org=draw_text_position,
-                                         fontFace=font_draw_number,
-                                         fontScale=1, color=(255, 255, 255), thickness=2)
+        output_image_frame = cv2.putText(img=im, text=text_draw, org=draw_text_position,
+                                         fontFace=font_draw_number, fontScale=1,
+                                         color=(255, 255, 255), thickness=2)
 
         # 显示结果帧
-        cv2.imshow('demo', output_image_frame)
-        if out.isOpened():  # 检查视频写入对象是否成功打开
+        if not headless:
+            cv2.imshow('demo', output_image_frame)
+
+        # 写入结果帧
+        if out.isOpened():
             out.write(output_image_frame)
+
         cv2.waitKey(1)
 
     capture.release()
@@ -119,8 +133,9 @@ if __name__ == '__main__':
     plt.ylabel('Counts per Frame')
     plt.title('Counts per Frame Over Time for Person and Vehicle')
     plt.legend()
-    plt.savefig('frame_line_chart.png')
-    plt.show()
+    plt.savefig(os.path.join(output_path, 'per_frame_line_chart.png'))
+    if not headless:
+        plt.show()
 
     # 生成每帧进入人车数折线图
     plt.figure(figsize=(10, 5))
@@ -130,5 +145,18 @@ if __name__ == '__main__':
     plt.ylabel('Counts')
     plt.title('Counts Over Time for Person and Vehicle')
     plt.legend()
-    plt.savefig('in_line_chart.png')
-    plt.show()
+    plt.savefig(os.path.join(output_path, 'in_line_chart.png'))
+    if not headless:
+        plt.show()
+
+
+if __name__ == '__main__':
+    default_output_path = f'outputs/{datetime.datetime.now().strftime("%Y%m%d%H%M%S")}'
+
+    paser = argparse.ArgumentParser()
+    paser.add_argument('--video_input', type=str, default='video/test.mp4')
+    paser.add_argument('--output_path', type=str, default=default_output_path)
+    paser.add_argument('--headless', type=bool, default=False)
+    args = paser.parse_args()
+
+    main(args.video_input, args.output_path, args.headless)
