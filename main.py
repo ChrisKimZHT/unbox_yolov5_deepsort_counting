@@ -1,9 +1,8 @@
-import numpy as np
 import cv2
 import matplotlib.pyplot as plt
-import time
-from detector import Detector
+from tqdm import tqdm
 import tracker
+from detector import Detector
 
 if __name__ == '__main__':
     # 初始化进入和离开计数
@@ -32,7 +31,9 @@ if __name__ == '__main__':
     # 用于跟踪已经统计过的目标ID的集合
     counted_ids = set()
 
-    while True:
+    total_frames = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
+
+    for _ in tqdm(range(total_frames)):
         # 读取每帧图片
         ret, im = capture.read()
         if not ret:
@@ -53,7 +54,7 @@ if __name__ == '__main__':
         for x1, y1, x2, y2, label, track_id in bboxes2draw:
             vehicle_in.append(vehicle_in[-1])
             person_in.append(person_in[-1])
-            
+
             # 如果跟踪ID已经统计过，则跳过
             if track_id in counted_ids:
                 continue
