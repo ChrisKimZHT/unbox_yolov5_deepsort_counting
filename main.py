@@ -2,6 +2,7 @@ import argparse
 import datetime
 import json
 import os
+import sys
 
 import cv2
 import matplotlib.pyplot as plt
@@ -13,10 +14,6 @@ from detector import Detector
 
 
 def main(video_input: str, output_path: str, headless: bool = False):
-    # 初始化输出文件夹
-    if not os.path.exists(output_path):
-        os.makedirs(output_path)
-
     # 初始化计数
     count_person = 0
     count_vehicle = 0
@@ -181,6 +178,20 @@ if __name__ == '__main__':
     paser.add_argument('--input_video', type=str, default='video/test.mp4')
     paser.add_argument('--output_path', type=str, default=default_output_path)
     paser.add_argument('--headless', type=bool, default=False)
+    paser.add_argument('--log_file', type=str, default=None)
     args = paser.parse_args()
 
+    # 初始化输出文件夹
+    if not os.path.exists(args.output_path):
+        os.makedirs(args.output_path)
+
+    # 重定向输出
+    if args.log_file is not None:
+        log_file = open(f"{args.output_path}/{args.log_file}", 'w', encoding='utf-8')
+        sys.stdout = log_file
+        sys.stderr = log_file
+
     main(args.input_video, args.output_path, args.headless)
+
+    if args.log_file is not None:
+        log_file.close()
