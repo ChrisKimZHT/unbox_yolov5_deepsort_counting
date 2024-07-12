@@ -4,6 +4,7 @@ import os
 
 import cv2
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 from tqdm import tqdm
 
 import tracker
@@ -20,8 +21,8 @@ def main(video_input: str, output_path: str, headless: bool = False):
     count_vehicle = 0
 
     # 初始化计数列表
-    person_per_frame = []
-    vehicle_per_frame = []
+    person_per_frame = [0]
+    vehicle_per_frame = [0]
     person_in = [0]
     vehicle_in = [0]
 
@@ -43,6 +44,9 @@ def main(video_input: str, output_path: str, headless: bool = False):
     detector = Detector()
 
     for _ in tqdm(range(total_frames)):
+        vehicle_in.append(vehicle_in[-1])
+        person_in.append(person_in[-1])
+
         # 读取每帧图片
         ret, im = capture.read()
         if not ret:
@@ -61,9 +65,6 @@ def main(video_input: str, output_path: str, headless: bool = False):
 
         # 统计人流和车流数量
         for x1, y1, x2, y2, label, track_id in bboxes2draw:
-            vehicle_in.append(vehicle_in[-1])
-            person_in.append(person_in[-1])
-
             # 如果跟踪ID已经统计过，则跳过
             if track_id in counted_ids:
                 continue
@@ -125,11 +126,18 @@ def main(video_input: str, output_path: str, headless: bool = False):
     capture.release()
     cv2.destroyAllWindows()
 
+    # 利用帧数生成时间横坐标
+    time_per_frame = [i / original_fps for i in range(total_frames + 1)]
+
     # 生成每帧人车数折线图
-    plt.figure(figsize=(10, 5))
-    plt.plot(person_per_frame, label='Person Count', color='blue')
-    plt.plot(vehicle_per_frame, label='Vehicle Count', color='cyan')
-    plt.xlabel('Frame')
+    plt.figure(figsize=(16, 9))
+    plt.gca().xaxis.set_major_locator(MaxNLocator(integer=True))
+    plt.gca().yaxis.set_major_locator(MaxNLocator(integer=True))
+    plt.plot(time_per_frame, person_per_frame,
+             label='Person Count', color='blue')
+    plt.plot(time_per_frame, vehicle_per_frame,
+             label='Vehicle Count', color='cyan')
+    plt.xlabel('Time (s)')
     plt.ylabel('Counts per Frame')
     plt.title('Counts per Frame Over Time for Person and Vehicle')
     plt.legend()
@@ -138,14 +146,32 @@ def main(video_input: str, output_path: str, headless: bool = False):
         plt.show()
 
     # 生成每帧进入人车数折线图
-    plt.figure(figsize=(10, 5))
-    plt.plot(person_in, label='Person In', color='blue')
-    plt.plot(vehicle_in, label='Vehicle In', color='cyan')
-    plt.xlabel('Frame')
+    plt.figure(figsize=(16, 9))
+    plt.gca().xaxis.set_major_locator(MaxNLocator(integer=True))
+    plt.gca().yaxis.set_major_locator(MaxNLocator(integer=True))
+    plt.plot(time_per_frame, person_in, label='Person In', color='blue')
+    plt.plot(time_per_frame, vehicle_in, label='Vehicle In', color='cyan')
+    plt.xlabel('Time (s)')
     plt.ylabel('Counts')
     plt.title('Counts Over Time for Person and Vehicle')
     plt.legend()
     plt.savefig(os.path.join(output_path, 'in_line_chart.png'))
+    if not headless:
+        plt.show()
+
+    # 生成人车进入的变化情况
+    plt.figure(figsize=(16, 9))
+    plt.gca().xaxis.set_major_locator(MaxNLocator(integer=True))
+    plt.gca().yaxis.set_major_locator(MaxNLocator(integer=True))
+    plt.plot(time_per_frame, [0] + [person_in[i] - person_in[i - 1]
+             for i in range(1, len(person_in))], label='Person In', color='blue')
+    plt.plot(time_per_frame, [0] + [vehicle_in[i] - vehicle_in[i - 1]
+             for i in range(1, len(vehicle_in))], label='Vehicle In', color='cyan')
+    plt.xlabel('Time (s)')
+    plt.ylabel('Counts')
+    plt.title('Counts Over Time for Person and Vehicle')
+    plt.legend()
+    plt.savefig(os.path.join(output_path, 'in_change_line_chart.png'))
     if not headless:
         plt.show()
 
@@ -154,9 +180,9 @@ if __name__ == '__main__':
     default_output_path = f'outputs/{datetime.datetime.now().strftime("%Y%m%d%H%M%S")}'
 
     paser = argparse.ArgumentParser()
-    paser.add_argument('--video_input', type=str, default='video/test.mp4')
+    paser.add_argument('--input_video', type=str, default='video/test.mp4')
     paser.add_argument('--output_path', type=str, default=default_output_path)
     paser.add_argument('--headless', type=bool, default=False)
     args = paser.parse_args()
 
-    main(args.video_input, args.output_path, args.headless)
+    main(args.input_video, args.output_path, args.headless)
