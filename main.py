@@ -1,5 +1,6 @@
 import argparse
 import datetime
+import json
 import os
 
 import cv2
@@ -130,53 +131,50 @@ def main(video_input: str, output_path: str, headless: bool = False):
     time_per_frame = [i / original_fps for i in range(total_frames + 1)]
 
     # 生成每帧人车数折线图
-    plt.figure(figsize=(16, 9))
+    plt.figure(figsize=(8, 5))
     plt.gca().xaxis.set_major_locator(MaxNLocator(integer=True))
     plt.gca().yaxis.set_major_locator(MaxNLocator(integer=True))
     plt.plot(time_per_frame, person_per_frame,
-             label='Person Count', color='blue')
+             label='行人数', color='blue')
     plt.plot(time_per_frame, vehicle_per_frame,
-             label='Vehicle Count', color='cyan')
-    plt.xlabel('Time (s)')
-    plt.ylabel('Counts per Frame')
-    plt.title('Counts per Frame Over Time for Person and Vehicle')
+             label='车辆数', color='cyan')
+    plt.xlabel('时间 (s)')
+    plt.ylabel('数量')
+    plt.title('每帧内的人车数量')
     plt.legend()
-    plt.savefig(os.path.join(output_path, 'per_frame_line_chart.png'))
+    plt.savefig(os.path.join(output_path, 'count_per_frame.png'))
     if not headless:
         plt.show()
 
     # 生成每帧进入人车数折线图
-    plt.figure(figsize=(16, 9))
+    plt.figure(figsize=(8, 5))
     plt.gca().xaxis.set_major_locator(MaxNLocator(integer=True))
     plt.gca().yaxis.set_major_locator(MaxNLocator(integer=True))
-    plt.plot(time_per_frame, person_in, label='Person In', color='blue')
-    plt.plot(time_per_frame, vehicle_in, label='Vehicle In', color='cyan')
-    plt.xlabel('Time (s)')
-    plt.ylabel('Counts')
-    plt.title('Counts Over Time for Person and Vehicle')
+    plt.plot(time_per_frame, person_in, label='行人进入', color='blue')
+    plt.plot(time_per_frame, vehicle_in, label='车辆进入', color='cyan')
+    plt.xlabel('时间 (s)')
+    plt.ylabel('数量')
+    plt.title('从视频开始到该帧人车进入总量')
     plt.legend()
-    plt.savefig(os.path.join(output_path, 'in_line_chart.png'))
+    plt.savefig(os.path.join(output_path, 'count_prefix_sum.png'))
     if not headless:
         plt.show()
 
-    # 生成人车进入的变化情况
-    plt.figure(figsize=(16, 9))
-    plt.gca().xaxis.set_major_locator(MaxNLocator(integer=True))
-    plt.gca().yaxis.set_major_locator(MaxNLocator(integer=True))
-    plt.plot(time_per_frame, [0] + [person_in[i] - person_in[i - 1]
-             for i in range(1, len(person_in))], label='Person In', color='blue')
-    plt.plot(time_per_frame, [0] + [vehicle_in[i] - vehicle_in[i - 1]
-             for i in range(1, len(vehicle_in))], label='Vehicle In', color='cyan')
-    plt.xlabel('Time (s)')
-    plt.ylabel('Counts')
-    plt.title('Counts Over Time for Person and Vehicle')
-    plt.legend()
-    plt.savefig(os.path.join(output_path, 'in_change_line_chart.png'))
-    if not headless:
-        plt.show()
+    # 保存统计结果
+    with open(os.path.join(output_path, 'count_result.json'), 'w') as f:
+        json.dump({
+            'count_person': count_person,
+            'count_vehicle': count_vehicle,
+            'person_per_frame': person_per_frame,
+            'vehicle_per_frame': vehicle_per_frame,
+            'person_in_per_frame': person_in,
+            'vehicle_in_per_frame': vehicle_in,
+            'x_axis': time_per_frame,
+        }, f, indent=None)
 
 
 if __name__ == '__main__':
+    plt.rcParams['font.family'] = 'SimHei'
     default_output_path = f'outputs/{datetime.datetime.now().strftime("%Y%m%d%H%M%S")}'
 
     paser = argparse.ArgumentParser()
