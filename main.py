@@ -34,7 +34,7 @@ def main(video_input: str, output_path: str, headless: bool = False):
     original_fps = capture.get(cv2.CAP_PROP_FPS)
 
     # 初始化视频写入对象
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    fourcc = cv2.VideoWriter_fourcc(*'X264')
     out = cv2.VideoWriter(os.path.join(output_path, 'result_video.mp4'),
                           fourcc, original_fps, (960, 540))
 
